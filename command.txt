@@ -1,0 +1,32 @@
+﻿"VpcId": vpc-02b191647167e4bfc
+1(10.0.1.0/24) subnet-0f606624ff8605d33
+2(10.0.0.0/24) subnet-0b3ab2b4c60267a2c
+"InternetGatewayId": igw-0289e883bf2ec6951
+"RouteTableId": rtb-0f76dfa1cb3d366d6
+"GroupId": sg-06b6e0c4d09984533
+"InstanceId": i-0e5228957b2f28361
+
+Створюєм мережу
+aws ec2 create-vpc --cidr-block 10.0.0.0/16
+Створюєм 2 підмережі
+aws ec2 create-subnet --vpc-id vpc-02b191647167e4bfc --cidr-block 10.0.1.0/24
+aws ec2 create-subnet --vpc-id vpc-02b191647167e4bfc --cidr-block 10.0.0.0/24
+Гетавей
+aws ec2 create-internet-gateway
+aws ec2 attach-internet-gateway --vpc-id vpc-02b191647167e4bfc --internet-gateway-id igw-0289e883bf2ec6951
+Таблиці маршрутизаціїї
+aws ec2 create-route-table --vpc-id vpc-02b191647167e4bfc
+aws ec2 create-route --route-table-id rtb-0f76dfa1cb3d366d6 --destination-cidr-block 0.0.0.0/0 --gateway-id igw-0289e883bf2ec6951
+aws ec2 describe-route-tables --route-table-id rtb-0f76dfa1cb3d366d6 
+aws ec2 describe-subnets --filters "Name=vpc-id,Values=vpc-02b191647167e4bfc" --query 'Subnets[*].{ID:SubnetId,CIDR:CidrBlock}'
+
+aws ec2 associate-route-table  --subnet-id subnet-0f606624ff8605d33 --route-table-id rtb-0f76dfa1cb3d366d6
+aws ec2 modify-subnet-attribute --subnet-id subnet-0f606624ff8605d33 --map-public-ip-on-launch
+
+aws ec2 create-key-pair --key-name MyKeyPair --query 'KeyMaterial' --output text > MyKeyPair.pem
+
+aws ec2 create-security-group --group-name SSHAccess --description "Security group for SSH access" --vpc-id vpc-02b191647167e4bfc
+aws ec2 authorize-security-group-ingress --group-id sg-06b6e0c4d09984533 --protocol tcp --port 22 --cidr 0.0.0.0/0
+
+aws ec2 run-instances --image-id ami-0bd39c806c2335b95 --count 1 --instance-type t2.micro --key-name MyKeyPair --security-group-ids sg-06b6e0c4d09984533 --subnet-id subnet-0f606624ff8605d33
+aws ec2 describe-instances --instance-id i-0e5228957b2f28361
